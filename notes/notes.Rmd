@@ -1,0 +1,111 @@
+---
+title: "Notes for when I forget my paper notebook"
+output: html_notebook
+editor_options: 
+  chunk_output_type: inline
+---
+
+1/21/2020
+
+Freq vs Bayesian
+- Parameters have a distribution in Bayes - they are random variables as well
+- Parameters don't have a distirbution in frequentist - they are fixed
+
+3 steps to Bayesian estimate
+1) Write down a prior guess $\pi(\theta)$
+2) Obtain posterior $p(\theta|X)$
+3) Perform statistical inferences (point and interval estimates, hypothesis tests) by summarizing posterior
+
+- At start of 2020, what is the proportion of people that will get a flu vaccine at end of year? 
+- Frequentists can't estimate  this without data from the end of year
+- Bayesians can take data from 2018 and answer the question, or provide a weaker guess with data from 2010
+- range of distribution on prior reflects our uncertainty
+
+The posterior combines information from the prior and your data.
+Posterior distribution will equal the data when the prior is a noninformative prior.
+
+Why Bayesian?
+- You can incoporate prior information outside of just the data you collected
+- Helps with fitting complex models that are awkward or infeasible from frequentist perspectives
+- Eases interpretation of statistical inference
+- Useful when data available is small
+- Compelx models like hierarchical models
+- Bayes allows for early stopping
+- When the sample size is very large, the data will come to domiante the prior
+- Cannot add additional data analysis in the middle of an experiment because it will mess up your Type 1 error rates
+- Bayesians can calculate the bayesian predicitive probability - conditional on the 34 obs of patients in the clinical trial, this is the predicitive probability of seeing a difference in the response rate of the two arms if we reach the full sample size.
+- Bayesian clinical trials allow unlimited # of interim analysis
+
+Interpretation differences
+- A frequentist 95% CI saysif we generate 100 samples of size n and find the interval for each sample, about 95 of the obtained intervals will contain the true value of the parameter
+- Uncertainty in the frequentist estimate is quantified by investigating how the interval varies with repeated data sampling from the same population. The interpretation is not about a single CI, but on how the interval is constructured
+- In Bayesian interval, interpretation says conditional on the observed data, the probability of hte interval covering the true value is 0.95.
+- The only data set of relevance is the one we sampled, not any data sets that were not but might have been generated.
+
+Hypothesis testing
+- Hypothesis testing under frequentist statistics could violate the likelihood principle. This principle says that the liklihood function contains all relevant experimental information for the observed x. And two likelihood functions contain the same information if those functions are proportional to each other as functions of $\theta$
+See example in lecture 1 notes on negative binomial vs binomial coin flipping example. 
+-Bayesians always condition on what has actually occurred, long run performance of a precedure is at most secondary interest. 
+
+1/23/2020
+
+Bayesian hypothesis testing
+- condition on data which has actually occurred
+- posterior is proportion to likelihood * prior
+
+Advantages to Bayesian Inference
+- intuitive approach to specifying complex models
+- ability to formally incorporate prior information
+- reason for stopping experiment does not affect inference
+- inferences are conditional on actual data
+- does not rely on asymptotics - it gives exact calculations
+
+Disadvantages
+- Can be dependent on prior distribution
+- Two experimenters could get different answers with the same data
+- How do you specify prior??
+- No direct connection with Type-1 error rate (which regulators care about)
+- Can require extensive and time-consuming computational algorithms
+
+Second lecture - Single parameter models
+- $A \cup A^c = S$
+- $A \cap A^c = 0$
+- $P(A) + P(A^C) = P(S)$
+
+P(A|B) = P(A \cap B) / P(B)
+p(A \cap B) = P(A | B) * P(B) = P(B | A) * P(A)
+P(A | B) = P(A \cap B) / P(A \cap B) + P(A^c \cap B)
+- look at slides for more
+A is our parameter, B is our data
+
+Suppose 5% infection rate with 98% true positive rate and 4% false positive. What's the probability of having the infection given a positive test? Way too low if you actually do the math
+
+
+Applied to a stistical model
+p(\theta|y) = p(y, \theta) / m(y) = f(y |\theta) * pi(\theta) / integral over parameter space theta{(f(y|t) * pi(t) dt)}
+
+posterior = liklihood * prior / marginal distribution of y (the distribution of y when we integrate out the parameter)
+The marginal distribution of y is a function of y alone (nothing to do with theta) so it is a normalizing constant (the posterior is proportional to the likelihood * prior)
+
+The posterior mean of theta given y is a weighted average of the prior mean and observed data values, with weights determined by the variances
+If the variance of our prior is much larger than the variance of our data, then the weight is pushed towards the prior mean. If the converse, then weight is pushed towards the posterior (more information in data than prior)
+
+Posterior variance of theta will be equal to the weight from above * tau^2. The conditional variance will be smaller than the prior variance and the data variance - pooling information from prior distribution and data
+Precision is the reciprocal inverse of variance and is additive (Var^-1(theta | y) = Var^-1(theta) + var^-1(y | theta)
+
+When the variance of the prior and a single observation are the same, the data contain the same amount of info as the prior.
+The posterior variance shrinks as n gets larger and the posterior collapses to a point mass at n = infinity.
+
+I think I might have been mixing up sigma and tau earlier. As the variance of the prior increases, there is less and less information in the prior. When variance goes to infinity - non-informative prior
+In some cases in frequentist practice it is hard to get an estimate of variance. For example, Lasso regression (I guess?) it can be hard to get variance estiamte sfor your parameters. Bayesian Lasso will still shrink estimates but also provide estimates of variances
+
+Deriving posterior for normal-normal case
+m(y) does not depend on theta and is a constant so that the final posterior is A * f(y | theta) * pi(theta) such that the integral{A * f(y | theta) * pi(theta) d theta = 1}
+
+
+
+
+
+
+
+
