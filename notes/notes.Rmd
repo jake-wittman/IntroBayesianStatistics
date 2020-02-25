@@ -107,5 +107,14 @@ m(y) does not depend on theta and is a constant so that the final posterior is A
 
 
 
+2/25/2018 Bayesian computation
+
+Can't use the normal Variance estimator of our samples because they're not iid, our samples are autocorrelated. 
+- To avoid wasteful parallel sampling or thinning, compute the effective sample size ESS = N / kappa(lambda). kappa(lambda) is the autocorrelation time (how many time steps you need to move before your samples aren't autocorrelated)
+Var = s^2 / ESS(lambda) [not the sample size].
+Because kappa is always >= 1, so ESS <= N, the Variance estaimted using ESS is always larger than the variance estimated assuming iid. This makes sense, since if we don't take into account the autorocrrelation we pretend we have more data than we really do
+
+Alternative - is to batch. Divide the run into m successive batches of length kith batch means. Take the average of the batch mean and then the variance of the batch means from the grand batch mean.
+
 
 

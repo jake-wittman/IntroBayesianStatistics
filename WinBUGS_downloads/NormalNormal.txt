@@ -1,0 +1,30 @@
+###################################
+# WiNBUGS code for Normal-Normal Model #
+###################################
+
+
+model {
+
+	# Likelihood: y[i] ~ N(theta,sigma^2)
+	for(i in 1:n){
+		y[i] ~ dnorm(theta,prec.y)
+	}
+	prec.y <- 1/sigma2
+	
+	# Prior: theta ~ N(mu,tau2)
+	theta ~ dnorm(mu,prec.theta)
+	prec.theta <- 1/tau2 
+}
+
+
+# Data
+list(
+	  mu=2,sigma2=1,tau2=1,n=10,
+	  y=c(7.2,5.0,6.7,4.6,6.4,5.5,3.6,6.5,7.9,6.6)
+	 )
+	
+	
+# Initial values
+list(theta=0)
+
+list(theta=6)

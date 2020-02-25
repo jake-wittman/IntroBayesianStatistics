@@ -1,0 +1,37 @@
+---
+title: "computation"
+author: "Jake Wittman"
+date: "2/18/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Importance sampling
+Pick g(theta) by plotting our unnormalized posterior and pick a distribution that approximates our unnormalized posterior.
+Need to pick a g(theta) so that you get coverage over most of your unnormalized posterior
+Want weights to be approximately equal to unnormalized posterior
+
+
+Find unnormalized posterior.
+In example:
+Want to get an estimate of sigma for X ~ N(0, theta)
+Simulate data from N(0, 4)
+Then do some other stuff...
+
+
+Rejection sampling
+P*(theta|y) is the unnormalized posterior
+Draw a sample from an auxillary distribution, decide if we want to accept or reject
+p*(theta|y) < Mg(theta)
+
+where M > 0 (a constant) and g(theta) is an envelope function that "blankets" our posterior
+
+draw theta ~ g(theta)
+draw U ~ Uniform(0, 1)
+
+Accept theta_j if U < p*(theta|y) / Mg(theta_j)
+G(theta) sits above p*(theta|y) and we accept thetas in proportion to the ratio of the inequality above, effectively correcting g(theta) to approximate our distribution of interest
+M cannot be too large or you won't accept very many values because the proportion from the inequality is close to 0.
