@@ -1,0 +1,110 @@
+#########################################
+# WinBUGS code for Linear hierarchical modeling ##
+# in a two-way ANOVA Cross-protocol data #######
+#########################################
+
+# The code calculate Bayesian posterior predictive p-value and marginal p-values
+# Using the test quantity (sum of) squared standardized residuals
+
+# The trick:  we add a new replicate data vector "Y_rep", which is not observed. 
+# WinBUGS will estimate Y_rep during the run, and this is used as the predicted
+# Y^rep vector in the Bayesian posterior predictive p-value calculation.
+
+# Dp gives Bayesian p-value for the "omnibus goodness-of-fit" measure 
+# Each p_val[i,j] gives the fitness measure of each data point 
+
+model {
+
+	for(i in 1:I) {			 # loop for 6 studies
+		for(j in 1:J) {		# loop for 18 clinical units   
+		 
+			Y[i,j] ~ dnorm(theta[i,j], P[i,j])     
+			theta[i,j] <- a[i]+b[j]+s[i,j]	  # full model
+
+			s[i,j] ~ dnorm(0.0,prec.s)		# prior on s[i,j]
+						
+			Y_rep[i,j] ~ dnorm(theta[i,j], P[i,j])
+							
+			D[i,j] <- (Y[i,j] - theta[i,j]) * (Y[i,j] - theta[i,j]) * P[i,j] *(1-na_ind[i,j])
+			D_rep[i,j] <-  (Y_rep[i,j]-theta[i,j])* (Y_rep[i,j]-theta[i,j])*P[i,j] *(1-na_ind[i,j])  
+   		 p_val[i,j] <- step(D_rep[i,j] - D[i,j])
+		
+		}	# end of loop j
+	}		# end of loop i
+	
+	sumD_rep <- sum(D_rep[,])
+    sumD <- sum(D[,])
+    Dp <-  step(sumD_rep-sumD)
+
+    # Priors
+    for(i in 1:I) {
+		a[i] ~ dnorm(0, 0.0001)               # prior on a[i]
+    }
+	for(j in 1:J) {
+		b[j] ~ dnorm(0.0,prec.b)			  # prior on b[j]
+	}	
+
+	prec.b <- 1/(b_sigma*b_sigma)    		
+	prec.s <- 1/(s_sigma*s_sigma)	
+	b_sigma ~ dunif(0.01, 100)			# clinic-level s.d.
+	s_sigma ~ dunif(0.01,100)			 # s.d. of s_ij's	
+}
+
+
+## DATA:
+list(I = 6,    # number of studies
+     J = 18,   # number of clinics (at most)
+     
+	 Y = structure(
+  						.Data = c(0.814, -0.203, -0.133, NA, -0.715, 0.739, 0.118, 
+        				  NA, NA, 0.271, NA, -0.0023, -0.076, 0.651, -0.249, 
+        				  0.0026, NA, 1.217, NA, NA, NA, NA, -0.24236, 
+          				0.00928, 0.8073, -0.51149, 1.93893, 1.07922, NA, 0.29996, 1.41267, 
+						  -0.46985, 0.09798, 0.29206, 0.19483, 0.16531, -0.40556, NA, 0.21807, 
+        				  NA, -0.54369, NA, -0.04707, 0.23272, 0.21767, -0.27662, 
+          				0.79159, -0.10268, 0.6576, 0.0604, -0.27151, 0.7048, 0.6054, 0.38503, 
+        	  			0.29848, NA, -2.20587, NA, -0.73148, NA, 0.9134, 0.13073,
+          				-0.06594, -0.23161, 1.26396, -0.43129, -0.02205, 0.42073, -0.16309, 
+          				0.60758, 0.18718, 0.17248, 0.2597, NA, 0.35022, NA, 0.60031, 
+          				NA, -0.09084, NA, NA, 0.75204, -0.35662, 0.83652, 
+          				-0.16441, -0.11157, 0.85996, -0.22899, NA, 0.16011, NA,
+          				NA, 0.14491, NA, 0.04111, 0.22188, 0.09871, 0.01708, 0.35535, 
+          				0.20278, 0.8073, 0.37308, -0.64, -0.01021, 0.0813, 1.04416, -0.20111, 
+        				  0.20344), .Dim = c(6, 18)), 
+
+	 na_ind = structure(
+  						.Data = c(0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0,
+                          1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 
+						  0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+        	  			0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+						  0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0,
+						  1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), .Dim = c(6, 18)), 
+
+	P = structure(
+  						.Data = c(1.55472, 0.63796, 0.66422, 0.0001, 2.22103, 3.02457, 
+						  1.38408, 0.0001, 0.0001, 2.93207, 0.0001, 1.33034, 1.19442, 2.86302, 
+	  					2.39627, 2.20785, 0.0001, 1.49815, 0.0001, 0.0001, 0.0001, 0.0001, 
+	  					1.7054, 4.22496, 2.52965, 3.21071, 1.55576, 2.06012, 0.0001, 4.43682, 
+	  					0.74642, 3.74025, 4.20441, 3.2145, 5.44972, 5.87876, 4.61706, 0.0001, 
+	  					1.91103, 0.0001, 4.26425, 0.0001, 2.70169, 5.39252, 1.96031, 6.63744, 
+	  					1.6591, 10.12627, 5.15778, 12.20163, 9.12072, 8.56466, 8.09651, 6.76019,
+	  					3.42682, 0.0001, 0.73295, 0.0001, 4.53736, 0.0001, 1.97782, 5.93378, 
+	  					2.38223, 6.65423, 1.27929, 10.4889, 5.42775, 10.75121, 9.06588, 9.24314,
+	  					9.41177, 8.3589, 6.15393, 0.0001, 2.2114, 0.0001, 0.66407, 0.0001, 
+	  					2.47915, 0.0001, 0.0001, 0.48528, 3.72857, 1.14836, 1.1933, 0.49845, 
+	  					3.32753, 6.14448, 0.0001, 2.43433, 0.0001, 0.0001, 0.64786, 0.0001, 
+	  					3.31796, 3.30026, 3.31, 12.10082, 5.82853, 21.92399, 4.72651, 6.29366, 
+	  					0.74707, 3.86906, 4.74962, 4.17327, 2.72863, 2.50757), .Dim = c(6, 18))
+	)    # end of data list
+
+
+## INITS (for three chains):
+list(b_sigma=5, s_sigma=5, a=c(3,3,3,3,3,3),
+	  b=c(2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2))
+
+list(b_sigma=25, s_sigma=25, a=c(3,3,3,3,3,3),
+	  b=c(-10,-10,-10,-10,-10,-10,-10,-10,-10,-10,-10,-10,-10,-10,-10,-10,-10,-10))
+
+list(b_sigma=50, s_sigma=50, a=c(-3,-3,-3,-3,-3,-3),
+	  b=c(20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20))
+

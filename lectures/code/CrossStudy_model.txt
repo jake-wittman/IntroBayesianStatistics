@@ -1,0 +1,73 @@
+#########################################
+# WinBUGS code for Linear hierarchical modeling ##
+# in a two-way ANOVA Cross-protocol data #######
+#########################################
+
+# The code compares three candidate models for the meta-analysis data
+# Model 1: full model with study effect, clinical-unit effect, and interaction term
+# Model 2: reduced model with no interaction
+# Model 3: reduced model with only study main effect
+# Model 4: reduced model with only unit main effect
+
+# Use DIC and WAIC to compare the three models
+# DIC can be obtained directly
+# WAIC relies on posterior of p(y[i,j] | theta[i,j]) and log p(y[i,j] | theta[i,j]) 
+
+# Trick: fit the three models simultaneously by replicating the data
+
+model {
+
+	for(i in 1:I) {			 # loop for 6 studies
+		for(j in 1:J) {		# loop for 18 clinical units   
+		 
+			Y1[i,j] ~ dnorm(theta1[i,j], P[i,j])     
+			theta1[i,j] <- a1[i]+b1[j]+s1[i,j]	  # full model
+			
+			Y2[i,j] ~ dnorm(theta2[i,j], P[i,j])    
+			theta2[i,j] <- a2[i] + b2[j]           # drop interactions
+			
+			Y3[i,j] ~ dnorm(theta3[i,j], P[i,j])   
+			theta3[i,j] <- a3[i]     		       # study effect only
+			
+			Y4[i,j] ~ dnorm(theta4[i,j], P[i,j])   
+			theta4[i,j] <- b4[j]     		       # unit effect only
+
+			s1[i,j] ~ dnorm(0.0,prec.s1)		# prior on s[i,j]
+			
+			lppd1[i,j] <- log(sqrt(P[i,j])) - (Y1[i,j]-theta1[i,j])*(Y1[i,j]-theta1[i,j])*P[i,j]/2*(1-na_ind[i,j])
+			ppd1[i,j] <- exp(lppd1[i,j])
+			
+			lppd2[i,j] <- log(sqrt(P[i,j])) - (Y2[i,j]-theta2[i,j])*(Y2[i,j]-theta2[i,j])*P[i,j]/2*(1-na_ind[i,j])
+			ppd2[i,j] <- exp(lppd2[i,j])
+			
+			lppd3[i,j] <- log(sqrt(P[i,j])) - (Y3[i,j]-theta3[i,j])*(Y3[i,j]-theta3[i,j])*P[i,j]/2*(1-na_ind[i,j])
+			ppd3[i,j] <- exp(lppd3[i,j])
+			
+			lppd4[i,j] <- log(sqrt(P[i,j])) - (Y4[i,j]-theta4[i,j])*(Y4[i,j]-theta4[i,j])*P[i,j]/2*(1-na_ind[i,j])
+			ppd4[i,j] <- exp(lppd4[i,j])
+		
+		}	# end of loop j
+	}		# end of loop i	
+
+    # Priors
+    for(i in 1:I) {
+		a1[i] ~ dnorm(0, 0.0001)               # prior on a[i]
+		a2[i] ~ dnorm(0, 0.0001)               # prior on a[i]
+		a3[i] ~ dnorm(0, 0.0001)               # prior on a[i]
+    }
+	for(j in 1:J) {
+		b1[j] ~ dnorm(0.0,prec.b1)			  # prior on b[j]
+		b2[j] ~ dnorm(0.0,prec.b2)			  # prior on b[j]
+		b4[j] ~ dnorm(0.0,prec.b4)			  # prior on b[j]
+	}	
+
+	prec.b1 <- 1/(b1_sigma*b1_sigma)    
+	prec.b2 <- 1/(b2_sigma*b2_sigma)   	
+	prec.b4 <- 1/(b4_sigma*b4_sigma)  	
+	prec.s1 <- 1/(s1_sigma*s1_sigma)	
+	b1_sigma ~ dunif(0.01, 100)			# clinic-level s.d.
+	b2_sigma ~ dunif(0.01, 100)			# clinic-level s.d.
+	b4_sigma ~ dunif(0.01, 100)			# clinic-level s.d.
+	s1_sigma ~ dunif(0.01,100)			 # s.d. of s_ij's	
+}
+

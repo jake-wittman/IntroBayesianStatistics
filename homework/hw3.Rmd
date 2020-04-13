@@ -1,0 +1,161 @@
+---
+title: "Homework 3 PubH 7440"
+author: "Jake Wittman"
+date: "3/1/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+1a) 
+```{r}
+# 1a
+
+# Gibbs sampler
+rm(list=ls())
+set.seed(12345)
+
+library(invgamma) # this contains the function to generate inv-gamma random variable
+
+### First, read data from txt file
+data <- read.csv(here::here("homework/coalminingdisaster.csv"))
+n <- nrow(data)
+year <- data$Year
+y <- data$Count
+
+
+### Specify priors
+a1 <- a2 <- 0.5
+c1 <- c2 <- 1
+d1 <- d2 <- 1
+k <- 40
+group <- c(rep(1, k), rep(2, (n - k)))
+
+### Specify MCMC runs, burnin numbers
+runs <- 50000 
+burn <- 1000 
+
+
+### Specify initial values 
+theta.init <- rep(1, 2)
+b.init <- c(1, 1)
+
+
+### Create arrays to store MCMC samples
+theta.save <- array(NA, c(runs, 2))
+b.save <- array(NA, c(runs,2))
+
+
+
+### Now conduct Gibbs sampling
+theta <- theta.init
+b <- b.init
+
+
+for(iter in 1:(runs+burn)){ 
+    
+    # at each iteration t
+    
+    # Step 1: generate theta from Gamma full conditional
+    for(i in 1:2) {
+        theta[i] <- rgamma(1,
+                           ((length(y[group == i]) * mean(y[group == i])) + 0.5),
+                           rate = b[group[i]] + length(y[group == i]))
+    }
+    
+   for(i in 1:2) {
+     b[i] <- rinvgamma(1, 0.5 + 1, scale = (sum(theta[group[i]]) + 1)/1)
+   }
+    
+    # save the current value of theta after burnin interations
+    if(iter>burn) {
+        theta.save[iter-burn,] <- theta
+        b.save[iter-burn,] <- b
+    }
+}
+
+### Check convergence
+par(mfrow=c(4,1),mar=c(4,4.5,1,0.5))
+plot(theta.save[, 1], type='l', xlab='iteration', ylab=expression(theta))
+plot(theta.save[, 2], type='l', xlab='iteration', ylab=expression(lambda))
+plot(b.save[, 1], type='l', xlab='iteration', ylab = "b1")
+plot(b.save[, 2], type='l', xlab='iteration', ylab = "b1")
+```
+
+
+```{r, echo = TRUE}
+par(mfrow = c(2, 2))
+summary(theta.save)
+hist(theta.save[, 1])
+hist(theta.save[, 2])
+
+
+R <- theta.save[, 1] / theta.save[, 2]
+summary(R)
+hist(R)
+
+
+```
+
+Theta[1] representes $\theta$ and Theta[2] is $\lambda$. The average number of accidents is about 3 times higher before 1890 than after (R = `r round(mean(R), 3)`).
+
+
+1b)
+
+```{r, warning=FALSE}
+# Fit model in JAGS
+set.seed(12345)
+pacman::p_load(rjags,
+               invgamma,
+               R2jags)
+#devtools::install.packages("jagsplot")
+library(jagsplot)
+y1 <- y[1:k]
+y2 <- y[(k + 1):n]
+
+poisson_model <- function() {
+  
+  # Priors
+  for (i in (1:2)) {
+    invb[i] ~ dgamma(1, 1)
+    b[i] <- 1 / invb[i]
+    theta[i] ~ dgamma(0.5, b[i]) 
+  }
+  
+  # Likelihood
+  for (i in 1:n) {
+      y[i] ~ dpois(theta[group[i]])
+  }
+
+  R <- theta[1] / theta[2]
+}
+
+jags.data <- list(y = y,
+                  n = n,
+                  k = k,
+                  group = group)
+
+params <- c("theta", "R")
+jags.sample <- jags.parallel(model = poisson_model,
+                             parameters.to.save = params,
+                             data = jags.data,
+                             n.chains = 3,
+                             n.burnin = 1000, 
+                             n.iter = 10000)
+
+jags.sample
+par(mfrow = c(2, 2))
+jags.hist(jags.sample, which = c(3, 4, 1))
+```
+
+The JAGS output is very similar to the Gibbs sampler I wrote above. 
+
+
+1c) To include k as a parameter to be estimated, we could use the unnormalized density $p^*(k | \theta, \lambda, y)$.  We can draw samples from this unnormalized density and use rejection sampling with a Normal proposal density to draw estimates of our parameter $k$. These draws can then be used in Gibbs sampler to sample for the other parameters.
+
+## Code Appendix
+
+```{r show-code, ref.label=knitr::all_labels(), echo = TRUE, eval=FALSE}
+
+```
